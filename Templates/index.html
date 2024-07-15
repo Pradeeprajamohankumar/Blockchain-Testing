@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Explorer</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 50px;
+        }
+        .navbar {
+            margin-bottom: 30px;
+        }
+        .block {
+            background: #ffffff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .block h2 {
+            font-size: 1.5em;
+        }
+        .block ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .block ul li {
+            margin: 5px 0;
+        }
+        .form-group label {
+            font-weight: bold;
+        }
+        .btn {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+    <a class="navbar-brand" href="#">Blockchain Explorer</a>
+</nav>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <h1>Blockchain</h1>
+            <div id="blockchain">
+                <!-- Blocks will be dynamically added here -->
+            </div>
+        </div>
+        <div class="col-md-4">
+            <h2>Create a New Transaction</h2>
+            <form id="transaction-form">
+                <div class="form-group">
+                    <label for="sender">Sender:</label>
+                    <input type="text" class="form-control" id="sender" required>
+                </div>
+                <div class="form-group">
+                    <label for="recipient">Recipient:</label>
+                    <input type="text" class="form-control" id="recipient" required>
+                </div>
+                <div class="form-group">
+                    <label for="amount">Amount:</label>
+                    <input type="number" class="form-control" id="amount" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Transaction</button>
+            </form>
+
+            <h2>Mine a New Block</h2>
+            <button id="mine-block" class="btn btn-success">Mine Block</button>
+
+            <h2>Resolve Conflicts</h2>
+            <button id="resolve-conflicts" class="btn btn-info">Resolve Conflicts</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const baseUrl = 'http://127.0.0.1:5000';
+
+    function addBlockToDisplay(block) {
+        const blockchainDiv = document.getElementById('blockchain');
+        const blockDiv = document.createElement('div');
+        blockDiv.className = 'block';
+        blockDiv.innerHTML = `
+            <h2>Block ${block.index}</h2>
+            <p><strong>Timestamp:</strong> ${new Date(block.timestamp * 1000).toLocaleString()}</p>
+            <p><strong>Previous Hash:</strong> ${block.previous_hash}</p>
+            <p><strong>Proof:</strong> ${block.proof}</p>
+            <p><strong>Transactions:</strong></p>
+            <ul>
+                ${block.transactions.map(tx => `<li>${tx.sender} <i class="fas fa-arrow-right"></i> ${tx.recipient}: ${tx.amount}</li>`).join('')}
+            </ul>
+        `;
+        blockchainDiv.appendChild(blockDiv);
+    }
+
+    document.getElementById('transaction-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const sender = document.getElementById('sender').value;
+        const recipient = document.getElementById('recipient').value;
+        const amount = document.getElementById('amount').value;
+
+        fetch(`${baseUrl}/transactions/new`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                sender: sender,
+                recipient: recipient,
+                amount: amount
+            }),
+        }).then(response => response.json()).then(data => {
+            alert(data.message);
+        }).catch(error => console.error('Error:', error));
+    });
+
+    document.getElementById('mine-block').addEventListener('click', function() {
+        fetch(`${baseUrl}/mine`, {
+            method: 'GET',
+        }).then(response => response.json()).then(data => {
+            alert(data.message);
+            addBlockToDisplay(data);
+        }).catch(error => console.error('Error:', error));
+    });
+
+    document.getElementById('resolve-conflicts').addEventListener('click', function() {
+        fetch(`${baseUrl}/nodes/resolve`, {
+            method: 'GET',
+        }).then(response => response.json()).then(data => {
+            alert(data.message);
+            if (data.new_chain) {
+                const blockchainDiv = document.getElementById('blockchain');
+                blockchainDiv.innerHTML = ''; // Clear current blockchain display
+                data.new_chain.forEach(addBlockToDisplay); // Add new chain blocks
+            }
+        }).catch(error => console.error('Error:', error));
+    });
+</script>
+
+</body>
+</html>
