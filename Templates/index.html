@@ -52,6 +52,20 @@
             <h1>Blockchain</h1>
             <div id="blockchain">
                 <!-- Blocks will be dynamically added here -->
+                {% for block in blockchain %}
+                <div class="block">
+                    <h2>Block {{ block.index }}</h2>
+                    <p><strong>Timestamp:</strong> {{ block.timestamp }}</p>
+                    <p><strong>Previous Hash:</strong> {{ block.previous_hash }}</p>
+                    <p><strong>Proof:</strong> {{ block.proof }}</p>
+                    <p><strong>Transactions:</strong></p>
+                    <ul>
+                        {% for tx in block.transactions %}
+                        <li>{{ tx.sender }} <i class="fas fa-arrow-right"></i> {{ tx.recipient }}: {{ tx.amount }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
             </div>
         </div>
         <div class="col-md-4">
@@ -144,7 +158,15 @@
             }
         }).catch(error => console.error('Error:', error));
     });
+
+    // Initial load of the blockchain
+    fetch(`${baseUrl}/chain`, {
+        method: 'GET',
+    }).then(response => response.json()).then(data => {
+        data.chain.forEach(addBlockToDisplay);
+    }).catch(error => console.error('Error:', error));
 </script>
 
 </body>
+
 </html>
